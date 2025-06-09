@@ -4,6 +4,8 @@
 
 #include "Problem.h"
 
+#include <cmath>
+
 
 Problem::Problem(const std::string& file_path)
 {
@@ -54,17 +56,21 @@ std::ostream& operator<<(std::ostream& os, const Problem& p)
 
 unsigned int Problem::simulate() const
 {
+    //Array2D a(get_machine_count(), get_task_count());
     std::vector<unsigned int> machine_conveyors(machine_count, 0);
 
-    for(unsigned int i=0; i <to_do_list.size(); i++ )
+    for(const auto& i : to_do_list)
     {
         for (unsigned int j=0; j<machine_count; j++)
         {
-            if(j==0) machine_conveyors[0] += to_do_list[i].get_operations()[0];
+            if(j==0) machine_conveyors[0] += i.get_operations()[0];
             else  machine_conveyors[j] = std::max(machine_conveyors[j],
-                machine_conveyors[j-1]) + to_do_list[i].get_operations()[j];
+                machine_conveyors[j-1]) + i.get_operations()[j];
+            //a.set_at(j, i, machine_conveyors[j]);
         }
     }
+
+    //a.print();
     return machine_conveyors[machine_count-1];
 }
 
@@ -76,17 +82,82 @@ void Problem::rearrange(const Range& new_order)
     to_do_list = new_one;
 }
 
-// void Problem::match_to_machines(const based_number& matching)
-// {
-//     //if (matching.size() != get_task_count()) return;
-//
-//     for (unsigned int index=0; index<get_task_count(); index++)
-//     {
-//         to_do_list[index].match_to_machine(matching[index]);
-//
-//         //std::cout << "matched task nr" << to_do_list[index].get_id()
-//         //<< " to machine nr" << to_do_list[index].get_machine_id() << "!\n";
-//     }
-// }
+void Problem::remove_task(const Task& to_remove)
+{
+    to_do_list.erase(
+        std::remove_if(
+            to_do_list.begin(),
+            to_do_list.end(),
+            [&to_remove](const Task& t){return t==to_remove;} ),
+        to_do_list.end());
+}
+
+Array2D Problem::get_table() const
+{
+    Array2D result(machine_count, get_task_count());
+    for(unsigned int r=0; r<machine_count; r++)
+        for (unsigned int c=0; c<get_task_count(); c++)
+            result.set_at(r,c, to_do_list[c].get_operation(r));
+
+    return result;
+}
+Array2D Problem::get_paths_in() const
+{
+    Array2D result(get_machine_count(), get_task_count());
+    std::vector<unsigned int> machine_conveyors(machine_count, 0);
+
+    for(unsigned int i=0; i <to_do_list.size(); i++ )
+    {
+        for (unsigned int j=0; j<machine_count; j++)
+        {
+            if(j==0) machine_conveyors[0] += to_do_list[i].get_operations()[0];
+            else  machine_conveyors[j] = std::max(machine_conveyors[j],
+                machine_conveyors[j-1]) + to_do_list[i].get_operations()[j];
+            result.set_at(j, i, machine_conveyors[j]);
+        }
+    }
+
+    return result;
+}
 
 
+Array2D Problem::get_paths_out() const
+{
+    Array2D result(machine_count, get_task_count());
+    std::vector<unsigned int> machine_conveyors(machine_count, 0);
+    std::vector<unsigned int> offsets;
+    unsigned int value=0;
+
+    std::cout << "\n\n\n";
+    for (int j=machine_count-1; j>=0; j--)
+    {
+        if(j==machine_count-1) value = 0;
+        else value = to_do_list[get_task_count()-1].get_operation(j+1) + offsets[machine_count-j-2];
+        offsets.push_back(value);
+    }
+
+    unsigned int current_time=0;
+
+    for(int j=machine_count-1; j>=0; j--)
+    {
+        for (int i=to_do_list.size()-1; i >= 0; i--)
+        {
+            if(i==to_do_list.size()-1)
+            {
+                std::cout << "for m="<<j<<", offest is" << offsets[machine_count-j-1]<<"!\n";
+                if(j==machine_count-1)
+                    current_time+=to_do_list[i].get_operation(j);
+                else
+                    current_time+=(to_do_list[i].get_operation(j)+offsets[machine_count-j-1]);
+            }
+            else
+                current_time+=to_do_list[i].get_operation(j);
+
+            result.set_at(j,i, current_time);
+        }
+        current_time=0;
+    }
+
+
+    return result;
+}

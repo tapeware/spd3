@@ -18,6 +18,7 @@ class Solution
 
 public:
     explicit Solution(unsigned int c_max) : c_max(c_max) {}
+    Solution() = default;
     unsigned int get_c_max() const {return c_max;}
 };
 

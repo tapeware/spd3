@@ -4,24 +4,41 @@
 
 #include "algorithms.h"
 
+
+
 Solution NEH(const Problem& p)
 {
+    unsigned int current_time=0, min_time=0;
     Problem p_copy = p;
     p_copy.operations_length_sort();
     auto& p_copy_tasks = p_copy.access_tasks();
     Task shortest_task = p_copy_tasks[p_copy_tasks.size()-1];
 
-    // p_copy_tasks.erase(
-    //     std::remove_if(
-    //         p_copy_tasks.begin(),
-    //         p_copy_tasks.end(),
-    //         [&shortest_task](const Task& t){return t==shortest_task;} ),
-    //     p_copy_tasks.end());
+
+    current_time = p_copy.simulate();
+    //std::cout << p_copy << "^^ This evaluates to t=" << current_time<<"...\n\n";
+    p_copy_tasks.pop_back();
+
+    for(unsigned int offset=0; offset<p_copy.get_task_count(); offset++)
+    {
+        if(current_time < min_time || min_time==0) {
+            min_time=current_time;
+            //std::cout<<"min_time=" << min_time <<", time=" << current_time << "\n";
+            //std::cout<<"min time is now " << min_time <<"\n";
+
+        }
+        //std::cout<<"OFFSET IS NOW " << offset <<"!!!\n";
+        p_copy_tasks.insert(p_copy_tasks.begin()+offset, shortest_task);
+        current_time = p_copy.simulate();
+        //std::cout << p_copy << "^^ This evaluates to t=" << current_time<<"...\n\n";
+        p_copy.remove_task(shortest_task);
+    }
 
 
-    std:: cout << p_copy;
 
-    return Solution(1);
+    //std:: cout << min_time;
+
+    return Solution(min_time);
 }
 
 
@@ -59,21 +76,76 @@ Solution johnson(const Problem &p)
     if (p.get_machine_count()!=2)
         throw std::runtime_error("This algorithm is implemented only for m=2!");
 
-    std::vector<Task> front_vector;
-    std::vector<Task> back_vector;
-    std::vector<Task> tasks = p.get_tasks();
+    std::vector<Task> set1, set2, optimal_order,
+    tasks=p.get_tasks();
 
-
-    for(unsigned int task_index=0; task_index<tasks.size(); task_index++)
+    for(unsigned int i=0;i<p.get_task_count(); i++)
     {
-        if(tasks[task_index].get_operations()[0] > tasks[task_index].get_operations()[1])
-            back_vector.insert(back_vector.begin(), tasks[task_index]);
-        else
-            front_vector.insert(front_vector.end(), tasks[task_index]);
-
+        if (tasks[i].get_operation(0) < tasks[i].get_operation(1))
+            set1.push_back(tasks[i]);
+        else set2.push_back(tasks[i]);
     }
-    front_vector.insert(front_vector.end(), back_vector.begin(), back_vector.end());
 
-    Problem sorted(front_vector, 2);
-    return Solution(sorted.simulate());
+    std::sort(set1.begin(), set1.end(), johnson_task_comp1);
+    std::sort(set2.begin(), set2.end(), johnson_task_comp2);
+    optimal_order.insert(optimal_order.begin(), set1.begin(), set1.end());
+    optimal_order.insert(optimal_order.end(), set2.begin(), set2.end());
+
+    return Solution(Problem(optimal_order, p.get_machine_count()).simulate());
+}
+
+Solution fNEH(const Problem& p)
+{
+    // unsigned int machine_count = p.get_machine_count(),
+    // task_count =  p.get_tasks().size();
+    // int sum=0;
+    //
+    // std::vector<Weight> weights(task_count);
+    // std::vector<Task> optimally_arranged_tasks, tmp;
+    // Problem tmp_p;
+    //
+    // for(unsigned int task_index=0; task_index<task_count; task_index++)
+    // {
+    //     sum = p.get_task_by_index(task_index).get_operations_time_sum();
+    //     weights[task_index] = {-sum, task_index};
+    // }
+    //
+    // std::sort(weights.begin(), weights.end(), weight_comp);
+    //
+    // for(unsigned int task_index=0; task_index<task_count; task_index++)
+    // {
+    //     unsigned int current_time=0, min_time=0, id = weights[task_index].id;
+    //
+    //     for(int offset=0; offset<= optimally_arranged_tasks.size(); offset++)
+    //     {
+    //         tmp=optimally_arranged_tasks;
+    //         tmp.insert(tmp.begin()+offset, p.get_tasks()[id]);
+    //         tmp_p = Problem(tmp, machine_count);
+    //         current_time = tmp_p.simulate();
+    //
+    //         if(current_time < min_time || min_time==0)
+    //         {
+    //             min_time = current_time;
+    //             optimally_arranged_tasks = tmp;
+    //         }
+    //     }
+    // }
+    // return Solution(Problem(optimally_arranged_tasks, machine_count).simulate());
+
+    // Array2D lookup_table = p.get_table();
+    // Array2D in = p.get_paths_in();
+    // Array2D out = p.get_paths_out();
+    //
+    // Task to_insert;
+    //
+    // for (unsigned int task_index=0; task_index<p.get_task_count(); task_index++)
+    // {
+    //
+    //
+    // }
+
+    //i.print();
+
+
+    return Solution(0);
 }

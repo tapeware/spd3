@@ -6,6 +6,8 @@
 
 #include <iostream>
 
+#include "Problem.h"
+
 void Array2D::print() {
     for(unsigned int i=0; i<rows; i++) {
         for(unsigned int j=0; j<cols; j++) {
@@ -14,6 +16,34 @@ void Array2D::print() {
         std::cout<<"\n";
     }
 }
+
+unsigned int Array2D::col_sum(unsigned int which, unsigned int up_to_row) const
+{
+    unsigned int sum=0;
+    for(unsigned int i=0; i<=up_to_row; i++) sum+=a[i][which];
+    return sum;
+}
+
+unsigned int Array2D::row_sum(unsigned int which, unsigned int up_to_col) const
+{
+    unsigned int sum=0;
+    for(unsigned int i=0; i<=up_to_col; i++)
+    {
+        //std::cout<< a[which][i]<<" + " << sum << " = "<<a[which][i]+sum<<"...\n";
+        sum+=a[which][i];
+    }
+    return sum;
+}
+
+unsigned int Array2D::get_path(unsigned int row, unsigned int col) const
+{
+    std::cout<<"[" <<row<<", " << col <<"]\n";
+    std::cout <<row_sum(0,col) <<" + "<<col_sum(col, row) <<
+        " - " << a[0][col] << " = " << row_sum(0,col) + col_sum(col, row) - a[0][col]
+    <<"\n";
+    return row_sum(0,col) + col_sum(col, row) - a[0][col];
+}
+
 
 Range get_range(unsigned int beginning, unsigned int end)
 {
@@ -80,7 +110,7 @@ std::string Timer::get_measurement_with_unit() const
         number_to_print = duration/1000'000'000.0;
     }
 
-    result << std::fixed << std::setprecision(3)<< number_to_print << unit << "\n";
+    result << std::fixed << std::setprecision(3)<< number_to_print << unit;
     return result.str();
 }
 
@@ -89,3 +119,4 @@ void Timer::print_measurement() const
     if (!measured) return;
     std::cout << "time: " << get_measurement_with_unit();
 }
+

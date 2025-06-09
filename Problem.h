@@ -44,9 +44,13 @@ public:
     unsigned int simulate() const;
     void rearrange(const Range& r);
     //void match_to_machines(const based_number& matching);
+    void remove_task(const Task& to_remove);
 
     void operations_length_sort(){std::sort(to_do_list.begin(), to_do_list.end(), task_comp);}
 
+    Array2D get_table() const;
+    Array2D get_paths_in() const;
+    Array2D get_paths_out() const;
 };
 
 

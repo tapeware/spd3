@@ -18,6 +18,12 @@ std::ostream& operator<<(std::ostream& os, const Range& r);
 
 typedef std::chrono::steady_clock::time_point time_measurement;
 
+struct Weight {
+    int w;
+    unsigned int id;
+};
+
+inline bool weight_comp(const Weight& w1, const Weight& w2) {return w1.w > w2.w;}
 
 class Timer
 {
@@ -48,6 +54,9 @@ public:
         for (unsigned int r=0; r<rows; r++) a.push_back(col);
     }
     unsigned int get_at(unsigned int row, unsigned int col) const {return a.at(row).at(col);}
+    unsigned int col_sum(unsigned int which, unsigned int up_to_row) const;
+    unsigned int row_sum(unsigned int which, unsigned int up_to_col) const;
+    unsigned int get_path(unsigned int row, unsigned int col) const;
     void set_at(unsigned int row, unsigned int col, unsigned int value) {a[row][col]=value;}
     void print();
 };

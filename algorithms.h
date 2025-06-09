@@ -8,10 +8,13 @@
 #include "Problem.h"
 #include "Solution.h"
 #include "utils.h"
+#include <numeric>
 
 Solution overview(const Problem& p);
 Solution NEH(const Problem& p);
 Solution johnson(const Problem& p);
+Solution fNEH(const Problem& p);
+
 
 
 #endif //ALGORITHMS_H
