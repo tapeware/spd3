@@ -12,6 +12,7 @@
 #include <chrono>
 #include <iomanip>
 
+
 typedef std::vector<unsigned int> Range;
 Range get_range(unsigned int beginning, unsigned int end);
 std::ostream& operator<<(std::ostream& os, const Range& r);

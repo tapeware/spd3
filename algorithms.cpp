@@ -8,37 +8,40 @@
 
 Solution NEH(const Problem& p)
 {
-    unsigned int current_time=0, min_time=0;
-    Problem p_copy = p;
-    p_copy.operations_length_sort();
-    auto& p_copy_tasks = p_copy.access_tasks();
-    Task shortest_task = p_copy_tasks[p_copy_tasks.size()-1];
+    Problem sorted = p;
+    sorted.operations_length_sort();
+    Task current_task;
 
+    std::vector<Task> sorted_tasks = sorted.get_tasks();
+    std::vector<Task> neh_sol;
+    std::vector<Task> temp_test;
+     int best_time =0;
+     int best_position =0;
 
-    current_time = p_copy.simulate();
-    //std::cout << p_copy << "^^ This evaluates to t=" << current_time<<"...\n\n";
-    p_copy_tasks.pop_back();
+    for ( int i=0; i < sorted_tasks.size(); ++i) {
+        current_task = sorted_tasks[i];
 
-    for(unsigned int offset=0; offset<p_copy.get_task_count(); offset++)
-    {
-        if(current_time < min_time || min_time==0) {
-            min_time=current_time;
-            //std::cout<<"min_time=" << min_time <<", time=" << current_time << "\n";
-            //std::cout<<"min time is now " << min_time <<"\n";
+        best_time=0;
+        best_position=0;
 
+        for ( int offset=0; offset <= neh_sol.size();++offset) {
+            temp_test = neh_sol;
+            temp_test.insert(temp_test.begin() + offset, current_task);
+            Problem t_problem(temp_test, p.get_machine_count());
+             int time = t_problem.simulate();
+
+            if (time< best_time|| offset==0)
+            {
+                best_time = time;
+                best_position = offset;
+            }
         }
-        //std::cout<<"OFFSET IS NOW " << offset <<"!!!\n";
-        p_copy_tasks.insert(p_copy_tasks.begin()+offset, shortest_task);
-        current_time = p_copy.simulate();
-        //std::cout << p_copy << "^^ This evaluates to t=" << current_time<<"...\n\n";
-        p_copy.remove_task(shortest_task);
+
+        neh_sol.insert(neh_sol.begin() + best_position, current_task);
     }
 
-
-
-    //std:: cout << min_time;
-
-    return Solution(min_time);
+    Problem fin_problem(neh_sol, p.get_machine_count());
+    return Solution(fin_problem.simulate());
 }
 
 
@@ -94,58 +97,120 @@ Solution johnson(const Problem &p)
     return Solution(Problem(optimal_order, p.get_machine_count()).simulate());
 }
 
-Solution fNEH(const Problem& p)
-{
-    // unsigned int machine_count = p.get_machine_count(),
-    // task_count =  p.get_tasks().size();
-    // int sum=0;
-    //
-    // std::vector<Weight> weights(task_count);
-    // std::vector<Task> optimally_arranged_tasks, tmp;
-    // Problem tmp_p;
-    //
-    // for(unsigned int task_index=0; task_index<task_count; task_index++)
-    // {
-    //     sum = p.get_task_by_index(task_index).get_operations_time_sum();
-    //     weights[task_index] = {-sum, task_index};
-    // }
-    //
-    // std::sort(weights.begin(), weights.end(), weight_comp);
-    //
-    // for(unsigned int task_index=0; task_index<task_count; task_index++)
-    // {
-    //     unsigned int current_time=0, min_time=0, id = weights[task_index].id;
-    //
-    //     for(int offset=0; offset<= optimally_arranged_tasks.size(); offset++)
-    //     {
-    //         tmp=optimally_arranged_tasks;
-    //         tmp.insert(tmp.begin()+offset, p.get_tasks()[id]);
-    //         tmp_p = Problem(tmp, machine_count);
-    //         current_time = tmp_p.simulate();
-    //
-    //         if(current_time < min_time || min_time==0)
-    //         {
-    //             min_time = current_time;
-    //             optimally_arranged_tasks = tmp;
-    //         }
-    //     }
-    // }
-    // return Solution(Problem(optimally_arranged_tasks, machine_count).simulate());
+int eval_insert_makespan(
+    std::vector<Task>& current,
+    Task& task,
+    int pos,
+    Array2D& in,
+    Array2D& out,
+    int machines
+) {
+    auto ops = task.get_operations();
+    std::vector<int> pre(machines, 0);
+    std::vector<int> suf(machines, 0);
+    std::vector<int> end(machines, 0);
+    int max_val = 0;
 
-    // Array2D lookup_table = p.get_table();
-    // Array2D in = p.get_paths_in();
-    // Array2D out = p.get_paths_out();
-    //
-    // Task to_insert;
-    //
-    // for (unsigned int task_index=0; task_index<p.get_task_count(); task_index++)
-    // {
-    //
-    //
-    // }
+    if (pos > 0) {
+        for (int m=0; m <machines; m++) {
+            pre[m]=in.get_at(m, pos - 1);
+        }
+    }
 
-    //i.print();
+    if (pos < current.size()) {
+        for (int m =0; m < machines; m++) {
+            suf[m] =out.get_at(m, pos);
+        }
+    }
 
+    for (int m =0; m < machines; m++) {
+        if (m ==0) {
+            end[m] = pre[m]+ops[m];
+        } else {
+            int prev = end[m-1];
+            if (pre[m] > prev) {
+                prev = pre[m];
+            }
+            end[m] = prev+ops[m];
+        }
 
-    return Solution(0);
+        int total = end[m]+suf[m];
+        if (total>max_val) {
+            max_val = total;
+        }
+    }
+
+    return max_val;
 }
+
+int best_insert_pos(
+    std::vector<Task>& tasks,
+    Task& task,
+    int machines
+) {
+   unsigned int count = tasks.size();
+    Array2D in(machines, count);
+    Array2D out(machines, count);
+
+    std::vector<int> front(machines, 0);
+    for (int i=0; i<count; i++) {
+        auto ops = tasks[i].get_operations();
+        front[0] += ops[0];
+        in.set_at(0, i, front[0]);
+
+        for (int m=1; m<machines; m++) {
+            if (front[m-1] > front[m]) {
+                front[m] = front[m-1];
+            }
+            front[m] += ops[m];
+            in.set_at(m, i, front[m]);
+        }
+    }
+
+    std::vector<int> back(machines, 0);
+    for (int i=count-1; i>=0; i--) {
+        auto ops = tasks[i].get_operations();
+        back[machines-1] += ops[machines-1];
+        out.set_at(machines-1, i, back[machines-1]);
+
+        for (int m=machines-2; m>=0;m--) {
+            if (back[m+1] > back[m]) {
+                back[m] = back[m+1];
+            }
+            back[m]+=ops[m];
+            out.set_at(m, i, back[m]);
+        }
+    }
+
+    int best =0;
+    int best_time =-1;
+
+    for (int i=0; i<=count;i++) {
+        int t=eval_insert_makespan(tasks, task, i, in, out, machines);
+        if (best_time==-1 || t<best_time) {
+            best_time =t;
+            best = i;
+        }
+    }
+
+    return best;
+}
+
+Solution fNEH(const Problem& p) {
+    Problem sorted = p;
+    sorted.operations_length_sort();
+    std::vector<Task> tasks = sorted.get_tasks();
+
+    std::vector<Task> result;
+    result.reserve(tasks.size());
+
+    for (unsigned int i=0; i<tasks.size(); i++) {
+        int pos = best_insert_pos(result, tasks[i], p.get_machine_count());
+        result.insert(result.begin()+pos, tasks[i]);
+    }
+
+    Problem final(result, p.get_machine_count());
+    return Solution(final.simulate());
+}
+
+

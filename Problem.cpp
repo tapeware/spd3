@@ -101,19 +101,22 @@ Array2D Problem::get_table() const
 
     return result;
 }
-Array2D Problem::get_paths_in() const
-{
-    Array2D result(get_machine_count(), get_task_count());
-    std::vector<unsigned int> machine_conveyors(machine_count, 0);
+Array2D Problem::get_paths_in() const {
+    int m = get_machine_count();
+     int n = get_task_count();
 
-    for(unsigned int i=0; i <to_do_list.size(); i++ )
-    {
-        for (unsigned int j=0; j<machine_count; j++)
-        {
-            if(j==0) machine_conveyors[0] += to_do_list[i].get_operations()[0];
-            else  machine_conveyors[j] = std::max(machine_conveyors[j],
-                machine_conveyors[j-1]) + to_do_list[i].get_operations()[j];
-            result.set_at(j, i, machine_conveyors[j]);
+    Array2D result(m, n);
+    std::vector<int> machine_times(m, 0);
+
+    for ( int i=0; i<n;++i) {
+         const auto& ops = to_do_list[i].get_operations();
+
+        machine_times[0] += ops[0];
+        result.set_at(0, i, machine_times[0]);
+
+        for ( int j=1; j<m;++j) {
+            machine_times[j] = std::max(machine_times[j], machine_times[j - 1]) + ops[j];
+            result.set_at(j, i, machine_times[j]);
         }
     }
 
@@ -121,43 +124,30 @@ Array2D Problem::get_paths_in() const
 }
 
 
-Array2D Problem::get_paths_out() const
-{
-    Array2D result(machine_count, get_task_count());
-    std::vector<unsigned int> machine_conveyors(machine_count, 0);
-    std::vector<unsigned int> offsets;
-    unsigned int value=0;
+Array2D Problem::get_paths_out() const {
+    int m = machine_count;
+     int n = get_task_count();
+    Array2D result(m, n);
 
-    std::cout << "\n\n\n";
-    for (int j=machine_count-1; j>=0; j--)
-    {
-        if(j==machine_count-1) value = 0;
-        else value = to_do_list[get_task_count()-1].get_operation(j+1) + offsets[machine_count-j-2];
-        offsets.push_back(value);
+    std::vector<int> suffix_sum(m, 0);
+    const auto& last_ops = to_do_list.back().get_operations();
+
+    for (int j= m-2; j>=0;--j) {
+        suffix_sum[j] = last_ops[j+1] + suffix_sum[j+1];
     }
 
-    unsigned int current_time=0;
+    std::vector<int> times(n, 0);
 
-    for(int j=machine_count-1; j>=0; j--)
-    {
-        for (int i=to_do_list.size()-1; i >= 0; i--)
-        {
-            if(i==to_do_list.size()-1)
-            {
-                std::cout << "for m="<<j<<", offest is" << offsets[machine_count-j-1]<<"!\n";
-                if(j==machine_count-1)
-                    current_time+=to_do_list[i].get_operation(j);
-                else
-                    current_time+=(to_do_list[i].get_operation(j)+offsets[machine_count-j-1]);
-            }
-            else
-                current_time+=to_do_list[i].get_operation(j);
+    for (int j=m-1; j>=0;--j) {
+         times[n-1] = to_do_list[n-1].get_operation(j);
+        if (j<m-1) times[n-1] += suffix_sum[j];
+        result.set_at(j, n-1, times[n-1]);
 
-            result.set_at(j,i, current_time);
+        for (int i = n-2; i >= 0; --i) {
+            times[i] = to_do_list[i].get_operation(j) + times[i+1];
+              result.set_at(j, i, times[i]);
         }
-        current_time=0;
     }
-
 
     return result;
 }

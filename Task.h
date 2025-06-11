@@ -41,7 +41,7 @@ inline bool johnson_task_comp1(const Task& t1, const Task& t2)
 {return t1.get_operation(0)<t2.get_operation(0);}
 
 inline bool johnson_task_comp2(const Task& t1, const Task& t2)
-{return t1.get_operation(0)>t2.get_operation(0);}
+{return t1.get_operation(0)>t2.get_operation(1);}
 
 // inline std::vector<Task> concatenate_task_vectors
 // (const std::vector<Task>& v1, const std::vector<Task>& v2)
